@@ -33,9 +33,9 @@ const Crews = () => {
     fetchCrews();
   }, []);
 
-  const handleExecute = async (crewId: string) => {
+  const handleExecute = async (crewId: string, body?: Record<string, unknown>) => {
     try {
-      const updatedCrew = await api.executeCrew(crewId);
+      const updatedCrew = await api.executeCrew(crewId, body);
       setCrews((prev) =>
         prev.map((c) => (c.id === crewId ? updatedCrew : c))
       );
