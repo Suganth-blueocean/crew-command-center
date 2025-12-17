@@ -1,13 +1,25 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, RefreshCw, Trash2, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Play, RefreshCw, Trash2, Clock, CheckCircle2, XCircle, Loader2, Code } from 'lucide-react';
 import { Crew } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface CrewCardProps {
   crew: Crew;
-  onExecute: (crewId: string) => void;
+  onExecute: (crewId: string, body?: Record<string, unknown>) => void;
   onSync: (crewId: string) => void;
   onDelete: (crewId: string) => void;
   isLoading?: boolean;
@@ -37,8 +49,34 @@ const statusConfig = {
 };
 
 export function CrewCard({ crew, onExecute, onSync, onDelete, isLoading }: CrewCardProps) {
+  const [jsonInput, setJsonInput] = useState('');
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  
   const status = statusConfig[crew.status];
   const StatusIcon = status.icon;
+
+  const handleExecuteWithJson = () => {
+    if (jsonInput.trim()) {
+      try {
+        const parsed = JSON.parse(jsonInput);
+        setJsonError(null);
+        onExecute(crew.id, parsed);
+        setDialogOpen(false);
+        setJsonInput('');
+      } catch {
+        setJsonError('Invalid JSON format');
+        return;
+      }
+    } else {
+      onExecute(crew.id);
+      setDialogOpen(false);
+    }
+  };
+
+  const handleQuickExecute = () => {
+    onExecute(crew.id);
+  };
 
   return (
     <motion.div
@@ -117,10 +155,59 @@ export function CrewCard({ crew, onExecute, onSync, onDelete, isLoading }: CrewC
             <Trash2 className="w-4 h-4" />
           </Button>
           
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="icon"
+                size="icon"
+                disabled={crew.status === 'running' || isLoading}
+                className="h-8 w-8"
+                title="Execute with JSON input"
+              >
+                <Code className="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Execute with JSON Input</DialogTitle>
+                <DialogDescription>
+                  Provide optional JSON data as the request body for execution.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="json-input">JSON Input (optional)</Label>
+                  <Textarea
+                    id="json-input"
+                    value={jsonInput}
+                    onChange={(e) => {
+                      setJsonInput(e.target.value);
+                      setJsonError(null);
+                    }}
+                    placeholder='{"key": "value"}'
+                    className="font-mono text-sm min-h-[150px]"
+                  />
+                  {jsonError && (
+                    <p className="text-sm text-destructive">{jsonError}</p>
+                  )}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleExecuteWithJson}>
+                  <Play className="w-4 h-4" />
+                  Execute
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
           <Button
             variant={crew.status === 'running' ? 'outline' : 'default'}
             size="sm"
-            onClick={() => onExecute(crew.id)}
+            onClick={handleQuickExecute}
             disabled={crew.status === 'running' || isLoading}
             className="ml-2"
           >

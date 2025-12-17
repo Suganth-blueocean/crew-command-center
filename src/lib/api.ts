@@ -30,9 +30,11 @@ export const api = {
   },
 
   // POST /crews/{crew_id}/execute - execute a crew
-  async executeCrew(crewId: string): Promise<Crew> {
+  async executeCrew(crewId: string, body?: Record<string, unknown>): Promise<Crew> {
     const res = await fetch(`${BASE}/crews/${encodeURIComponent(crewId)}/execute`, {
       method: 'POST',
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
     });
     await checkResponse(res);
     return res.json();
