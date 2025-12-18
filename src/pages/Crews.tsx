@@ -5,11 +5,12 @@ import { Plus, FolderOpen } from 'lucide-react';
 import { CrewCard } from '@/components/CrewCard';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
-import { Crew } from '@/lib/types';
+import { Crew, Execution } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 const Crews = () => {
   const [crews, setCrews] = useState<Crew[]>([]);
+  const [executionsMap, setExecutionsMap] = useState<Record<string, Execution[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -35,14 +36,13 @@ const Crews = () => {
 
   const handleExecute = async (crewId: string, body?: Record<string, unknown>) => {
     try {
-      const updatedCrew = await api.executeCrew(crewId, body);
-      setCrews((prev) =>
-        prev.map((c) => (c.crew_id === crewId ? updatedCrew : c))
-      );
+      await api.executeCrew(crewId, body);
       toast({
         title: "Execution Started",
         description: "The crew is now running.",
       });
+      // Sync executions after starting
+      handleSync(crewId);
     } catch (error) {
       toast({
         title: "Error",
@@ -55,18 +55,19 @@ const Crews = () => {
   const handleSync = async (crewId: string) => {
     setSyncingId(crewId);
     try {
-      const updatedCrew = await api.getCrewStatus(crewId);
-      setCrews((prev) =>
-        prev.map((c) => (c.crew_id === crewId ? updatedCrew : c))
-      );
+      const executions = await api.getCrewExecutions(crewId);
+      setExecutionsMap((prev) => ({
+        ...prev,
+        [crewId]: executions,
+      }));
       toast({
-        title: "Status Updated",
-        // description: `Crew status: ${updatedCrew.status}`,
+        title: "Synced",
+        description: `Fetched ${executions.length} execution(s).`,
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to sync crew status.",
+        description: "Failed to sync executions.",
         variant: "destructive",
       });
     } finally {
@@ -157,6 +158,7 @@ const Crews = () => {
                 >
                   <CrewCard
                     crew={crew}
+                    executions={executionsMap[crew.crew_id] || []}
                     onExecute={handleExecute}
                     onSync={handleSync}
                     onDelete={handleDelete}

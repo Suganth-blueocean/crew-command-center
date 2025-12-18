@@ -25,6 +25,14 @@ export interface Crew {
 
 export type CrewStatus = 'pending' | 'running' | 'completed' | 'failed';
 
+export interface Execution {
+  execution_id: string;
+  crew_id: string;
+  status: CrewStatus;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface CreateCrewPayload {
   crew_name: string;
   description: string;

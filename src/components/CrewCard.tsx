@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play,
   RefreshCw,
@@ -9,8 +9,10 @@ import {
   XCircle,
   Loader2,
   Code,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
-import { Crew } from '@/lib/types';
+import { Crew, Execution, CrewStatus } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -28,15 +30,18 @@ import { Label } from '@/components/ui/label';
 
 interface CrewCardProps {
   crew: Crew;
+  executions: Execution[];
   onExecute: (crewId: string, body?: Record<string, unknown>) => void;
   onSync: (crewId: string) => void;
   onDelete: (crewId: string) => void;
   isLoading?: boolean;
 }
 
-/* ---------------- SAFE STATUS CONFIG ---------------- */
-
-const statusConfig = {
+const statusConfig: Record<CrewStatus | 'idle', {
+  icon: typeof Clock;
+  label: string;
+  className: string;
+}> = {
   idle: {
     icon: Clock,
     label: 'Idle',
@@ -62,12 +67,44 @@ const statusConfig = {
     label: 'Failed',
     className: 'status-failed',
   },
-} as const;
+};
 
-/* ---------------- COMPONENT ---------------- */
+function ExecutionItem({ execution }: { execution: Execution }) {
+  const statusKey = execution.status || 'pending';
+  const status = statusConfig[statusKey];
+  const StatusIcon = status.icon;
+
+  return (
+    <div className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/30 border border-border/30">
+      <div className="flex items-center gap-3">
+        <StatusIcon
+          className={cn(
+            'w-4 h-4',
+            statusKey === 'running' && 'animate-spin',
+            status.className
+          )}
+        />
+        <span className="text-xs text-muted-foreground font-mono truncate max-w-[180px]">
+          {execution.execution_id}
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className={cn('text-xs font-medium', status.className)}>
+          {status.label}
+        </span>
+        {execution.created_at && (
+          <span className="text-xs text-muted-foreground">
+            {formatDistanceToNow(new Date(execution.created_at), { addSuffix: true })}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function CrewCard({
   crew,
+  executions,
   onExecute,
   onSync,
   onDelete,
@@ -76,16 +113,9 @@ export function CrewCard({
   const [jsonInput, setJsonInput] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
-  /* -------- STATUS (DEFENSIVE) -------- */
-
-  const statusKey =
-    (crew.status as keyof typeof statusConfig) ?? 'idle';
-
-  const status = statusConfig[statusKey];
-  const StatusIcon = status.icon;
-
-  /* -------- HANDLERS -------- */
+  const hasRunningExecution = executions.some((e) => e.status === 'running');
 
   const handleExecuteWithJson = () => {
     if (jsonInput.trim()) {
@@ -109,15 +139,7 @@ export function CrewCard({
     onExecute(crew.crew_id);
   };
 
-  /* -------- DATE HANDLING -------- */
-
-  const createdAt = crew.created_at
-    ? new Date(crew.created_at)
-    : null;
-
-  const updatedAt = crew.updated_at
-    ? new Date(crew.updated_at)
-    : null;
+  const createdAt = crew.created_at ? new Date(crew.created_at) : null;
 
   return (
     <motion.div
@@ -137,26 +159,14 @@ export function CrewCard({
             {crew.description}
           </p>
         </div>
-
-        {/* Status Badge */}
-        <div
-          className={cn(
-            'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ml-4',
-            'bg-muted/50 border border-border/50',
-            status.className
-          )}
-        >
-          <StatusIcon
-            className={cn(
-              'w-3.5 h-3.5',
-              statusKey === 'running' && 'animate-spin'
-            )}
-          />
-          {status.label}
+        <div className="flex items-center gap-2 ml-4">
+          <span className="text-xs text-muted-foreground">
+            {executions.length} execution{executions.length !== 1 ? 's' : ''}
+          </span>
         </div>
       </div>
 
-      {/* Tasks (API RETURNS string[]) */}
+      {/* Tasks */}
       <div className="flex flex-wrap gap-2 mb-4">
         {crew.task_names?.map((taskName) => (
           <span
@@ -169,20 +179,39 @@ export function CrewCard({
         ))}
       </div>
 
+      {/* Executions List */}
+      {executions.length > 0 && (
+        <div className="mb-4">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+          >
+            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {expanded ? 'Hide' : 'Show'} executions
+          </button>
+          <AnimatePresence>
+            {expanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="space-y-2 overflow-hidden"
+              >
+                {executions.map((execution) => (
+                  <ExecutionItem key={execution.execution_id} execution={execution} />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       {/* Footer */}
       <div className="flex items-center justify-between pt-4 border-t border-border/30">
         <div className="text-xs text-muted-foreground">
-          {updatedAt ? (
-            <span>
-              Last run{' '}
-              {formatDistanceToNow(updatedAt, { addSuffix: true })}
-            </span>
-          ) : createdAt ? (
-            <span>
-              Created{' '}
-              {formatDistanceToNow(createdAt, { addSuffix: true })}
-            </span>
-          ) : null}
+          {createdAt && (
+            <span>Created {formatDistanceToNow(createdAt, { addSuffix: true })}</span>
+          )}
         </div>
 
         {/* Actions */}
@@ -193,10 +222,9 @@ export function CrewCard({
             onClick={() => onSync(crew.crew_id)}
             disabled={isLoading}
             className="h-8 w-8"
+            title="Sync executions"
           >
-            <RefreshCw
-              className={cn('w-4 h-4', isLoading && 'animate-spin')}
-            />
+            <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
           </Button>
 
           <Button
@@ -213,7 +241,7 @@ export function CrewCard({
               <Button
                 variant="icon"
                 size="icon"
-                disabled={statusKey === 'running' || isLoading}
+                disabled={hasRunningExecution || isLoading}
                 className="h-8 w-8"
                 title="Execute with JSON input"
               >
@@ -249,10 +277,7 @@ export function CrewCard({
               </div>
 
               <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setDialogOpen(false)}
-                >
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
                 <Button onClick={handleExecuteWithJson}>
@@ -264,13 +289,13 @@ export function CrewCard({
           </Dialog>
 
           <Button
-            variant={statusKey === 'running' ? 'outline' : 'default'}
+            variant={hasRunningExecution ? 'outline' : 'default'}
             size="sm"
             onClick={handleQuickExecute}
-            disabled={statusKey === 'running' || isLoading}
+            disabled={hasRunningExecution || isLoading}
             className="ml-2"
           >
-            {statusKey === 'running' ? (
+            {hasRunningExecution ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Running
