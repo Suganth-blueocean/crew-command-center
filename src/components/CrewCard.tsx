@@ -118,7 +118,7 @@ export function CrewCard({
   const [jsonInput, setJsonInput] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   /** ✅ Normalize executions (CRITICAL FIX) */
   const safeExecutions: Execution[] = Array.isArray(executions)
@@ -165,6 +165,9 @@ export function CrewCard({
           <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors truncate">
             {crew.crew_name}
           </h3>
+          <p className="text-xs text-muted-foreground/70 font-mono mt-0.5">
+            {crew.crew_id}
+          </p>
           <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
             {crew.description}
           </p>
@@ -197,7 +200,7 @@ export function CrewCard({
             ) : (
               <ChevronDown className="w-4 h-4" />
             )}
-            {expanded ? 'Hide' : 'Show'} executions
+            {expanded ? 'Hide' : 'Show'} executions ({safeExecutions.length})
           </button>
 
           <AnimatePresence>
