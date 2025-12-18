@@ -16,8 +16,8 @@ const Crews = () => {
 
   const fetchCrews = async () => {
     try {
-      const data = await api.getCrews();
-      setCrews(data);
+      const response = await api.getCrews();
+      setCrews(response.crews);
     } catch (error) {
       toast({
         title: "Error",
@@ -37,7 +37,7 @@ const Crews = () => {
     try {
       const updatedCrew = await api.executeCrew(crewId, body);
       setCrews((prev) =>
-        prev.map((c) => (c.id === crewId ? updatedCrew : c))
+        prev.map((c) => (c.crew_id === crewId ? updatedCrew : c))
       );
       toast({
         title: "Execution Started",
@@ -57,11 +57,11 @@ const Crews = () => {
     try {
       const updatedCrew = await api.getCrewStatus(crewId);
       setCrews((prev) =>
-        prev.map((c) => (c.id === crewId ? updatedCrew : c))
+        prev.map((c) => (c.crew_id === crewId ? updatedCrew : c))
       );
       toast({
         title: "Status Updated",
-        description: `Crew status: ${updatedCrew.status}`,
+        // description: `Crew status: ${updatedCrew.status}`,
       });
     } catch (error) {
       toast({
@@ -77,7 +77,7 @@ const Crews = () => {
   const handleDelete = async (crewId: string) => {
     try {
       await api.deleteCrew(crewId);
-      setCrews((prev) => prev.filter((c) => c.id !== crewId));
+      setCrews((prev) => prev.filter((c) => c.crew_id !== crewId));
       toast({
         title: "Crew Deleted",
         description: "The crew has been removed.",
@@ -149,7 +149,7 @@ const Crews = () => {
             <AnimatePresence mode="popLayout">
               {crews.map((crew, index) => (
                 <motion.div
-                  key={crew.id}
+                  key={crew.crew_id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -160,7 +160,7 @@ const Crews = () => {
                     onExecute={handleExecute}
                     onSync={handleSync}
                     onDelete={handleDelete}
-                    isLoading={syncingId === crew.id}
+                    isLoading={syncingId === crew.crew_id}
                   />
                 </motion.div>
               ))}

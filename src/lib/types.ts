@@ -6,13 +6,21 @@ export interface Task {
 }
 
 export interface Crew {
-  id: string;
-  name: string;
+    //   crew_id: str
+    // crew_name: str
+    // description: str
+    // task_names: List[str]
+    // operator_id: str 
+    // created_at: str
+    // updated_at: str  
+  crew_id: string;
+  crew_name: string;
   description: string;
-  tasks: Task[];
+  task_names: string[];
+  operator_id: string;
+  created_at: string;
+  updated_at: string;
   status: CrewStatus;
-  createdAt: Date;
-  lastRun?: Date;
 }
 
 export type CrewStatus = 'pending' | 'running' | 'completed' | 'failed';

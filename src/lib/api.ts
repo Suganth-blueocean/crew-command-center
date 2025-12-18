@@ -11,8 +11,8 @@ async function checkResponse(res: Response) {
 }
 
 export const api = {
-  // GET /crews - list crews (assumes backend has this route)
-  async getCrews(): Promise<Crew[]> {
+  // GET /crews - list crews
+  async getCrews(): Promise<{crews: Crew[]}> {
     const res = await fetch(`${BASE}/crews`);
     await checkResponse(res);
     return res.json();

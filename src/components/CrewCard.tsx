@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, RefreshCw, Trash2, Clock, CheckCircle2, XCircle, Loader2, Code } from 'lucide-react';
+import {
+  Play,
+  RefreshCw,
+  Trash2,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Code,
+} from 'lucide-react';
 import { Crew } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -25,7 +34,14 @@ interface CrewCardProps {
   isLoading?: boolean;
 }
 
+/* ---------------- SAFE STATUS CONFIG ---------------- */
+
 const statusConfig = {
+  idle: {
+    icon: Clock,
+    label: 'Idle',
+    className: 'status-pending',
+  },
   pending: {
     icon: Clock,
     label: 'Pending',
@@ -46,22 +62,37 @@ const statusConfig = {
     label: 'Failed',
     className: 'status-failed',
   },
-};
+} as const;
 
-export function CrewCard({ crew, onExecute, onSync, onDelete, isLoading }: CrewCardProps) {
+/* ---------------- COMPONENT ---------------- */
+
+export function CrewCard({
+  crew,
+  onExecute,
+  onSync,
+  onDelete,
+  isLoading,
+}: CrewCardProps) {
   const [jsonInput, setJsonInput] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  
-  const status = statusConfig[crew.status];
+
+  /* -------- STATUS (DEFENSIVE) -------- */
+
+  const statusKey =
+    (crew.status as keyof typeof statusConfig) ?? 'idle';
+
+  const status = statusConfig[statusKey];
   const StatusIcon = status.icon;
+
+  /* -------- HANDLERS -------- */
 
   const handleExecuteWithJson = () => {
     if (jsonInput.trim()) {
       try {
         const parsed = JSON.parse(jsonInput);
         setJsonError(null);
-        onExecute(crew.id, parsed);
+        onExecute(crew.crew_id, parsed);
         setDialogOpen(false);
         setJsonInput('');
       } catch {
@@ -69,14 +100,24 @@ export function CrewCard({ crew, onExecute, onSync, onDelete, isLoading }: CrewC
         return;
       }
     } else {
-      onExecute(crew.id);
+      onExecute(crew.crew_id);
       setDialogOpen(false);
     }
   };
 
   const handleQuickExecute = () => {
-    onExecute(crew.id);
+    onExecute(crew.crew_id);
   };
+
+  /* -------- DATE HANDLING -------- */
+
+  const createdAt = crew.created_at
+    ? new Date(crew.created_at)
+    : null;
+
+  const updatedAt = crew.updated_at
+    ? new Date(crew.updated_at)
+    : null;
 
   return (
     <motion.div
@@ -90,36 +131,40 @@ export function CrewCard({ crew, onExecute, onSync, onDelete, isLoading }: CrewC
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors truncate">
-            {crew.name}
+            {crew.crew_name}
           </h3>
           <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
             {crew.description}
           </p>
         </div>
-        
+
         {/* Status Badge */}
-        <div className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ml-4",
-          "bg-muted/50 border border-border/50",
-          status.className
-        )}>
-          <StatusIcon className={cn(
-            "w-3.5 h-3.5",
-            crew.status === 'running' && "animate-spin"
-          )} />
+        <div
+          className={cn(
+            'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ml-4',
+            'bg-muted/50 border border-border/50',
+            status.className
+          )}
+        >
+          <StatusIcon
+            className={cn(
+              'w-3.5 h-3.5',
+              statusKey === 'running' && 'animate-spin'
+            )}
+          />
           {status.label}
         </div>
       </div>
 
-      {/* Tasks */}
+      {/* Tasks (API RETURNS string[]) */}
       <div className="flex flex-wrap gap-2 mb-4">
-        {crew.tasks.map((task) => (
+        {crew.task_names?.map((taskName) => (
           <span
-            key={task.id}
+            key={taskName}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/50 text-xs text-muted-foreground"
           >
-            <span>{task.icon}</span>
-            {task.name}
+            <Code className="w-3 h-3" />
+            {taskName}
           </span>
         ))}
       </div>
@@ -127,11 +172,17 @@ export function CrewCard({ crew, onExecute, onSync, onDelete, isLoading }: CrewC
       {/* Footer */}
       <div className="flex items-center justify-between pt-4 border-t border-border/30">
         <div className="text-xs text-muted-foreground">
-          {crew.lastRun ? (
-            <span>Last run {formatDistanceToNow(crew.lastRun, { addSuffix: true })}</span>
-          ) : (
-            <span>Created {formatDistanceToNow(crew.createdAt, { addSuffix: true })}</span>
-          )}
+          {updatedAt ? (
+            <span>
+              Last run{' '}
+              {formatDistanceToNow(updatedAt, { addSuffix: true })}
+            </span>
+          ) : createdAt ? (
+            <span>
+              Created{' '}
+              {formatDistanceToNow(createdAt, { addSuffix: true })}
+            </span>
+          ) : null}
         </div>
 
         {/* Actions */}
@@ -139,41 +190,45 @@ export function CrewCard({ crew, onExecute, onSync, onDelete, isLoading }: CrewC
           <Button
             variant="icon"
             size="icon"
-            onClick={() => onSync(crew.id)}
+            onClick={() => onSync(crew.crew_id)}
             disabled={isLoading}
             className="h-8 w-8"
           >
-            <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
+            <RefreshCw
+              className={cn('w-4 h-4', isLoading && 'animate-spin')}
+            />
           </Button>
-          
+
           <Button
             variant="icon"
             size="icon"
-            onClick={() => onDelete(crew.id)}
+            onClick={() => onDelete(crew.crew_id)}
             className="h-8 w-8 hover:text-destructive hover:bg-destructive/10"
           >
             <Trash2 className="w-4 h-4" />
           </Button>
-          
+
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button
                 variant="icon"
                 size="icon"
-                disabled={crew.status === 'running' || isLoading}
+                disabled={statusKey === 'running' || isLoading}
                 className="h-8 w-8"
                 title="Execute with JSON input"
               >
                 <Code className="w-4 h-4" />
               </Button>
             </DialogTrigger>
+
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Execute with JSON Input</DialogTitle>
                 <DialogDescription>
-                  Provide optional JSON data as the request body for execution.
+                  Provide optional JSON data as the request body.
                 </DialogDescription>
               </DialogHeader>
+
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="json-input">JSON Input (optional)</Label>
@@ -192,8 +247,12 @@ export function CrewCard({ crew, onExecute, onSync, onDelete, isLoading }: CrewC
                   )}
                 </div>
               </div>
+
               <DialogFooter>
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button onClick={handleExecuteWithJson}>
@@ -203,15 +262,15 @@ export function CrewCard({ crew, onExecute, onSync, onDelete, isLoading }: CrewC
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          
+
           <Button
-            variant={crew.status === 'running' ? 'outline' : 'default'}
+            variant={statusKey === 'running' ? 'outline' : 'default'}
             size="sm"
             onClick={handleQuickExecute}
-            disabled={crew.status === 'running' || isLoading}
+            disabled={statusKey === 'running' || isLoading}
             className="ml-2"
           >
-            {crew.status === 'running' ? (
+            {statusKey === 'running' ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Running
