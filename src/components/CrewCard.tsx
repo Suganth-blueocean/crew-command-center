@@ -139,8 +139,6 @@ export function CrewCard({
     onExecute(crew.crew_id);
   };
 
-  const createdAt = crew.created_at ? new Date(crew.created_at) : null;
-
   return (
     <motion.div
       className="glass-card rounded-lg p-6 border border-border/50 hover:border-primary/30 transition-all duration-300 group"
@@ -158,11 +156,6 @@ export function CrewCard({
           <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
             {crew.description}
           </p>
-        </div>
-        <div className="flex items-center gap-2 ml-4">
-          <span className="text-xs text-muted-foreground">
-            {executions.length} execution{executions.length !== 1 ? 's' : ''}
-          </span>
         </div>
       </div>
 
@@ -183,6 +176,7 @@ export function CrewCard({
       {executions.length > 0 && (
         <div className="mb-4">
           <button
+            type="button"
             onClick={() => setExpanded(!expanded)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
           >
@@ -207,16 +201,11 @@ export function CrewCard({
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-4 border-t border-border/30">
-        <div className="text-xs text-muted-foreground">
-          {createdAt && (
-            <span>Created {formatDistanceToNow(createdAt, { addSuffix: true })}</span>
-          )}
-        </div>
-
+      <div className="flex items-center justify-end pt-4 border-t border-border/30">
         {/* Actions */}
         <div className="flex items-center gap-2">
           <Button
+            type="button"
             variant="icon"
             size="icon"
             onClick={() => onSync(crew.crew_id)}
@@ -228,6 +217,7 @@ export function CrewCard({
           </Button>
 
           <Button
+            type="button"
             variant="icon"
             size="icon"
             onClick={() => onDelete(crew.crew_id)}
