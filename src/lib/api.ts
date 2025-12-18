@@ -40,9 +40,9 @@ export const api = {
     return res.json();
   },
 
-  // GET /crews/executions?crew_id= - get executions for a crew
+  // GET /executions?crew_id= - get executions for a crew
   async getCrewExecutions(crewId: string): Promise<Execution[]> {
-    const res = await fetch(`${BASE}/crews/executions?crew_id=${encodeURIComponent(crewId)}`);
+    const res = await fetch(`${BASE}/executions?crew_id=${encodeURIComponent(crewId)}`);
     await checkResponse(res);
     return res.json();
   },
