@@ -30,18 +30,21 @@ import { Label } from '@/components/ui/label';
 
 interface CrewCardProps {
   crew: Crew;
-  executions: Execution[];
+  executions: Execution[] | unknown; // ← allow unsafe input defensively
   onExecute: (crewId: string, body?: Record<string, unknown>) => void;
   onSync: (crewId: string) => void;
   onDelete: (crewId: string) => void;
   isLoading?: boolean;
 }
 
-const statusConfig: Record<CrewStatus | 'idle', {
-  icon: typeof Clock;
-  label: string;
-  className: string;
-}> = {
+const statusConfig: Record<
+  CrewStatus | 'idle',
+  {
+    icon: typeof Clock;
+    label: string;
+    className: string;
+  }
+> = {
   idle: {
     icon: Clock,
     label: 'Idle',
@@ -94,7 +97,9 @@ function ExecutionItem({ execution }: { execution: Execution }) {
         </span>
         {execution.created_at && (
           <span className="text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(execution.created_at), { addSuffix: true })}
+            {formatDistanceToNow(new Date(execution.created_at), {
+              addSuffix: true,
+            })}
           </span>
         )}
       </div>
@@ -115,7 +120,14 @@ export function CrewCard({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
-  const hasRunningExecution = executions.some((e) => e.status === 'running');
+  /** ✅ Normalize executions (CRITICAL FIX) */
+  const safeExecutions: Execution[] = Array.isArray(executions)
+    ? executions
+    : [];
+
+  const hasRunningExecution = safeExecutions.some(
+    (e) => e.status === 'running'
+  );
 
   const handleExecuteWithJson = () => {
     if (jsonInput.trim()) {
@@ -172,17 +184,22 @@ export function CrewCard({
         ))}
       </div>
 
-      {/* Executions List */}
-      {executions.length > 0 && (
+      {/* Executions */}
+      {safeExecutions.length > 0 && (
         <div className="mb-4">
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
           >
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {expanded ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
             {expanded ? 'Hide' : 'Show'} executions
           </button>
+
           <AnimatePresence>
             {expanded && (
               <motion.div
@@ -191,8 +208,11 @@ export function CrewCard({
                 exit={{ height: 0, opacity: 0 }}
                 className="space-y-2 overflow-hidden"
               >
-                {executions.map((execution) => (
-                  <ExecutionItem key={execution.execution_id} execution={execution} />
+                {safeExecutions.map((execution) => (
+                  <ExecutionItem
+                    key={execution.execution_id}
+                    execution={execution}
+                  />
                 ))}
               </motion.div>
             )}
@@ -202,7 +222,6 @@ export function CrewCard({
 
       {/* Footer */}
       <div className="flex items-center justify-end pt-4 border-t border-border/30">
-        {/* Actions */}
         <div className="flex items-center gap-2">
           <Button
             type="button"
@@ -213,7 +232,9 @@ export function CrewCard({
             className="h-8 w-8"
             title="Sync executions"
           >
-            <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
+            <RefreshCw
+              className={cn('w-4 h-4', isLoading && 'animate-spin')}
+            />
           </Button>
 
           <Button
@@ -267,7 +288,10 @@ export function CrewCard({
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button onClick={handleExecuteWithJson}>
