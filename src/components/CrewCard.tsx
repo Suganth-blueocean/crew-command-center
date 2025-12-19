@@ -55,6 +55,11 @@ const statusConfig: Record<
     label: 'Pending',
     className: 'status-pending',
   },
+  started: {
+    icon: Loader2,
+    label: 'Running',
+    className: 'status-running',
+  },
   running: {
     icon: Loader2,
     label: 'Running',
@@ -73,8 +78,12 @@ const statusConfig: Record<
 };
 
 function ExecutionItem({ execution }: { execution: Execution }) {
-  const statusKey = execution.status || 'pending';
-  const status = statusConfig[statusKey];
+  const rawStatus = execution.status ?? 'pending';
+
+  // ✅ Fallback to 'idle' if backend sends an unknown status
+  const status =
+    statusConfig[rawStatus as CrewStatus] ?? statusConfig.idle;
+
   const StatusIcon = status.icon;
 
   return (
@@ -83,7 +92,7 @@ function ExecutionItem({ execution }: { execution: Execution }) {
         <StatusIcon
           className={cn(
             'w-4 h-4',
-            statusKey === 'running' && 'animate-spin',
+            rawStatus === 'running' && 'animate-spin',
             status.className
           )}
         />
@@ -91,10 +100,12 @@ function ExecutionItem({ execution }: { execution: Execution }) {
           {execution.execution_id}
         </span>
       </div>
+
       <div className="flex items-center gap-3">
         <span className={cn('text-xs font-medium', status.className)}>
           {status.label}
         </span>
+
         {execution.created_at && (
           <span className="text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(execution.created_at), {
@@ -106,6 +117,7 @@ function ExecutionItem({ execution }: { execution: Execution }) {
     </div>
   );
 }
+
 
 export function CrewCard({
   crew,

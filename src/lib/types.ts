@@ -23,8 +23,12 @@ export interface Crew {
   status: CrewStatus;
 }
 
-export type CrewStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type CrewStatus = 'started' | 'pending' | 'running' | 'completed' | 'failed';
 
+
+export interface Executions {
+  executions: Execution[];
+}
 export interface Execution {
   execution_id: string;
   crew_id: string;

@@ -1,4 +1,4 @@
-import { Crew, CreateCrewPayload, Execution } from './types';
+import { Crew, CreateCrewPayload, Execution, Executions } from './types';
 
 const BASE = 'http://0.0.0.0:8000';
 
@@ -41,7 +41,7 @@ export const api = {
   },
 
   // GET /executions?crew_id= - get executions for a crew
-  async getCrewExecutions(crewId: string): Promise<Execution[]> {
+  async getCrewExecutions(crewId: string): Promise<Executions> {
     const res = await fetch(`${BASE}/executions?crew_id=${encodeURIComponent(crewId)}`);
     await checkResponse(res);
     return res.json();

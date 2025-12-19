@@ -35,7 +35,7 @@ const Index = () => {
 
       toast({
         title: "Crew Created",
-        description: `"${name}" is ready to execute.`,
+        description: `"${crew_name}" is ready to execute.`,
       });
 
       setSelectedTaskIds([]);
@@ -67,7 +67,7 @@ const Index = () => {
             Build Your <span className="text-primary neon-text">Crew</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Select the agents you need and orchestrate powerful AI workflows.
+            Select the tasks you need and orchestrate powerful AI workflows.
             Combine multiple capabilities into a single automated crew.
           </p>
         </motion.div>

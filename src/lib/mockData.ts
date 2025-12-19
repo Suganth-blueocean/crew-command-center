@@ -1,12 +1,12 @@
 import { Task } from './types';
 
 export const availableTasks: Task[] = [
-  {
-    id: 'fetch_code',
-    name: 'Fetch Code',
-    description: 'Fetches code from Github based on provided requirements',
-    icon: '📥',
-  },
+  // {
+  //   id: 'fetch_code',
+  //   name: 'Fetch Code',
+  //   description: 'Fetches code from Github based on provided requirements',
+  //   icon: '📥',
+  // },
   {
     id: 'analyze_code',
     name: 'Code Analyzer',
@@ -25,6 +25,12 @@ export const availableTasks: Task[] = [
     description: 'Creates github issues based on alert details',
     icon: '🐞',
   },
+  {
+    id: 'check_health',
+    name: 'Health Checker',
+    description: 'Checks the health of an application and reports issues',
+    icon: '🩺',
+  }
   // {
   //   id: 'reviewer',
   //   name: 'Quality Reviewer',

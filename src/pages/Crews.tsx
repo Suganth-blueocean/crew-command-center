@@ -55,11 +55,19 @@ const Crews = () => {
   const handleSync = async (crewId: string) => {
     setSyncingId(crewId);
     try {
-      const executions = await api.getCrewExecutions(crewId);
+      const response = await api.getCrewExecutions(crewId);
+
+      const executions: Execution[] = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.executions)
+          ? response.executions
+          : [];
+
       setExecutionsMap((prev) => ({
         ...prev,
         [crewId]: executions,
       }));
+
       toast({
         title: "Synced",
         description: `Fetched ${executions.length} execution(s).`,
