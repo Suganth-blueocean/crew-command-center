@@ -16,7 +16,7 @@ export const availableTasks: Task[] = [
   {
     id: 'send_notification',
     name: 'Notifier',
-    description: 'Sends notifications via Google chat',
+    description: 'Sends notifications via communication channels',
     icon: '🔔',
   },
   {
